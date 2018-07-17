@@ -40,6 +40,7 @@ git clone https://github.com/exlcode/exlcode
 
 # Install npm packages
 # Make sure that `which python` points to your installation python2 and that you have the build-essential package (on Ubuntu) for native builds and the xcode command line tools for OS X
+# WHEN RUNNING ON A SERVER: For linux servers (no desktop), make sure you install X11 dev with `sudo apt install libx11-dev` otherwise the build will fail
 # From the repo root, run:
 ./scripts/npm.sh install
 cd ./exlcode
