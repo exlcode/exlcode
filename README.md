@@ -10,9 +10,9 @@ Read the user docs [here](https://exlcode.com/documentation)
 
 ## EXLcode in Action
 
-![EXLcode IDE](screenshots/ide-01.png)
-![EXLcode IDE - Code Intelligence](screenshots/ide-02.png)
-![EXLcode Chrome Extension - GitHub Edit with EXLcode](screenshots/github-edit-with-exlcode.png)
+[![EXLcode IDE](screenshots/ide-01.png)](https://exlcode.com/)
+[![EXLcode IDE - Code Intelligence](screenshots/ide-02.png)](https://exlcode.com/)
+[![EXLcode Chrome Extension - GitHub Edit with EXLcode](screenshots/github-edit-with-exlcode.png)](https://exlcode.com/)
 
 ## Features
 
