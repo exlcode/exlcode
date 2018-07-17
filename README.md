@@ -1,4 +1,4 @@
-![EXLcode](screenshots/promo-tile-1400x560.png)
+[![EXLcode](screenshots/promo-tile-1400x560.png)](https://exlcode.com/)
 
 EXLcode is an open source, MIT-licensed, cloud+browser-based fork of the VS Code core maintained by EXL Inc.
 
