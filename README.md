@@ -6,16 +6,19 @@ Try it out at https://exlcode.com/
 
 Get the Chrome extension [here](https://chrome.google.com/webstore/detail/exlcode-vs-code-based-onl/elcfpiphmolcddmecegalaikjiclhdjc?hl=en).
 
+Read the user docs [here](https://exlcode.com/documentation)
+
 ## EXLcode in Action
 
-![Alt text](screenshots/ide-01.png)
-![Alt text](screenshots/ide-02.png)
-![Alt text](screenshots/github-edit-with-exlcode.png)
+![EXLcode IDE](screenshots/ide-01.png)
+![EXLcode IDE - Code Intelligence](screenshots/ide-02.png)
+![EXLcode Chrome Extension - GitHub Edit with EXLcode](screenshots/github-edit-with-exlcode.png)
 
 ## Features
 
 <ul>
 	<li>GitHub integration (view and edit repositories and files, <i>in place</i>)</li>
+	<li>Chrome extension for seamlessly using EXLcode in your daily workflow</li>
 	<li>Complete project explorer and text editor</li>
 	<li>Syntax highlighting and auto-complete for all major programming and markup languages</li>
 	<li>IntelliSense for Javascript, TypeScript, JSON</li>
@@ -60,15 +63,15 @@ npm run build
 cd ./exlcode && npm run http-server
 ```
 
-The IDE will be available at [http://localhost:8000](http://localhost:8000)
-
--   [Submit bugs and feature requests](https://github.com/microsoft/vscode/issues) and help us verify as they are checked in
--   Review [source code changes](https://github.com/microsoft/vscode/pulls)
--   Review the [documentation](https://github.com/microsoft/vscode-docs) and make pull requests for anything from typos to new content
+The IDE will then be available at [http://localhost:8000](http://localhost:8000)
 
 ## Contributing
 
 If you are interested in fixing issues and contributing directly to the code base, you can setup your development environment following the steps above and check issues in this GitHub repo. Once your changes are ready, please submit a pull request in this repo for the team to review.
+
+-   [Submit bugs and feature requests](https://github.com/exlcode/exlcode/issues) and help us verify as they are checked in
+-   Review [source code changes](https://github.com/exlcode/exlcode/pulls)
+-   Review the [documentation](https://exlcode.com/documentation) and open issues/PRs for anything from typos to new content
 
 ## Feedback
 
@@ -76,7 +79,7 @@ Please leave your feedback and bug reports in our [GitHub Issues](https://github
 
 ## Related Projects
 
--   [Chrome Extension](https://github.com/exlcode/exlcode-chrome)
+-   [Chrome Extension Source](https://github.com/exlcode/exlcode-chrome) ([Download Chrome Extension](https://chrome.google.com/webstore/detail/exlcode-vs-code-based-onl/elcfpiphmolcddmecegalaikjiclhdjc?hl=en))
 
 ## License
 
