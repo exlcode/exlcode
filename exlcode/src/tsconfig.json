@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "module": "amd",
+        "target": "es5",
+        "diagnostics": true,
+        "removeComments": false,
+        "preserveConstEnums": true,
+        "experimentalDecorators": true,
+        "moduleResolution": "classic",
+        "noImplicitAny": false,
+        "sourceMap": true,
+        "outDir": "../out-build",
+        "allowJs": true
+    },
+    "exclude": [
+        "node_modules",
+        "vs",
+        "monaco-css/monaco.d.ts",
+        "monaco-json/monaco.d.ts",
+        "monaco-typescript/monaco.d.ts"
+    ]
+}

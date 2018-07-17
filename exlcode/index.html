@@ -1,0 +1,609 @@
+<!-- Copyright (C) EXL, Inc. All rights reserved. -->
+<!-- Copyright (C) Microsoft Corporation. All rights reserved. -->
+<!-- Forked from vs/workbench/electron-browser/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>EXLcode</title>
+		<link rel="icon" type="image/png" href="favicon.png">
+		<link rel="mask-icon" href="favicon.png">
+
+		<!-- Theming (do not remove, we want to early load it to avoid flashing background) -->
+		<style>
+			.monaco-shell.vs-dark {
+				background-color: #1E1E1E;
+			}
+			.exlcode-body-startup {
+				margin: 0px; font-size: 11px; font-family: "Segoe WPC", "Segoe UI", "SFUIText-Light", "HelveticaNeue-Light", "Sans-Serif", "Droid Sans Fallback";
+			}
+			.exlcode-spinner {
+				height: 60px;
+				width: 60px;
+				margin: 94px auto 0 auto;
+				position: relative;
+				-webkit-animation: rotation .6s infinite linear;
+				-moz-animation: rotation .6s infinite linear;
+				-o-animation: rotation .6s infinite linear;
+				animation: rotation .6s infinite linear;
+				border-left: 6px solid rgba(0, 174, 239, .15);
+				border-right: 6px solid rgba(0, 174, 239, .15);
+				border-bottom: 6px solid rgba(0, 174, 239, .15);
+				border-top: 6px solid rgba(0, 174, 239, .8);
+				border-radius: 100%;
+			}
+
+			@-webkit-keyframes rotation {
+				from {
+					-webkit-transform: rotate(0deg);
+				}
+				to {
+					-webkit-transform: rotate(359deg);
+				}
+			}
+
+			@-moz-keyframes rotation {
+				from {
+					-moz-transform: rotate(0deg);
+				}
+				to {
+					-moz-transform: rotate(359deg);
+				}
+			}
+
+			@-o-keyframes rotation {
+				from {
+					-o-transform: rotate(0deg);
+				}
+				to {
+					-o-transform: rotate(359deg);
+				}
+			}
+
+			@keyframes rotation {
+				from {
+					transform: rotate(0deg);
+				}
+				to {
+					transform: rotate(359deg);
+				}
+			}
+		</style>
+
+		<script>
+			if (document.location.hostname == 'exlcode.com') {
+				(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+				(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+				m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+				})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+				ga('create', 'UA-121570714-1', {'siteSpeedSampleRate': 100});
+			} else {
+				ga = undefined;
+			}
+
+			function timeoutCallback(callback) {
+				var called = false;
+				function fn() {
+					if (!called) {
+						called = true;
+						callback();
+					}
+				}
+				setTimeout(fn, 1000);
+				return fn;
+			}
+
+			function sendGa(path, callback) {
+				if (ga) {
+					if (!callback) {
+						ga('send', 'pageview', path);
+					} else {
+						ga('send', 'pageview', path, {
+							hitCallback: timeoutCallback(callback)
+						});
+					}
+				} else {
+					if (callback) {
+						callback();
+					}
+				}
+			}
+		</script>
+
+		<!-- Helpers -->
+		<script type="text/javascript">
+//			var path = require('path');
+			var path = {
+				resolve: function (partialPath) {
+					console.log('path.resolve(' + partialPath + ')');
+					return '';
+				}
+			}
+//			var electron = require('electron');
+			var globals = {
+				globalSettingsValue: undefined,
+				programStart: Date.now(),
+				vscodeStart: Date.now(),
+			};
+
+			var electron = {
+				'remote': {
+					'getCurrentWindow': function () {
+						return {
+							'id': 1
+						}
+					},
+					'getGlobal': function (key) {
+						return globals[key];
+					}
+				},
+				'ipcRenderer': {
+					'send': function (message, value) {
+						console.log('ipcRenderer.send: ' + message + ', ' + value);
+					}
+				}
+			};
+
+			var remote = electron.remote;
+			var ipc = electron.ipcRenderer;
+			var windowId = remote.getCurrentWindow().id;
+			window.setImmediate = window.setTimeout;
+			var global = window; // Node-ish
+
+			function onError(error, enableDeveloperTools) {
+				if (enableDeveloperTools) {
+					ipc.send('vscode:openDevTools', windowId);
+				}
+
+				console.error('[uncaught exception]: ' + error);
+
+				if (error.stack) {
+					console.error(error.stack);
+				}
+			}
+
+			function parseURLQueryArgs() {
+				var result = {};
+				var search = window.location.search;
+				if (search) {
+					var params = search.split(/[?&]/);
+					for (var i = 0; i < params.length; i++) {
+						var param = params[i];
+						if (param) {
+							var keyValue = param.split('=');
+							if (keyValue.length === 2) {
+								result[keyValue[0]] = decodeURIComponent(keyValue[1]);
+							}
+						}
+					}
+				}
+
+				return result;
+			}
+
+			function setCookie(cname, cvalue, exdays) {
+				var d = new Date();
+				d.setTime(d.getTime() + (exdays*24*60*60*1000));
+				var expires = "expires="+ d.toUTCString();
+				document.cookie = cname + "=" + cvalue + "; " + expires;
+			}
+
+			function getCookie(cname) {
+				var name = cname + "=";
+				var ca = document.cookie.split(';');
+				for(var i = 0; i <ca.length; i++) {
+						var c = ca[i];
+						while (c.charAt(0)==' ') {
+								c = c.substring(1);
+						}
+						if (c.indexOf(name) == 0) {
+								return c.substring(name.length,c.length);
+						}
+				}
+				return "";
+			}
+
+			function createScript(src, onload) {
+				var script = document.createElement('script');
+				script.src = src;
+				script.addEventListener('load', onload);
+
+				var head = document.getElementsByTagName('head')[0];
+				head.insertBefore(script, head.lastChild);
+			}
+
+			function uriFromPath(_path) {
+				var pathName = path.resolve(_path).replace(/\\/g, '/');
+
+				if (pathName.length > 0 && pathName.charAt(0) !== '/') {
+					pathName = '/' + pathName;
+				}
+
+				return encodeURI('file://' + pathName);
+			}
+
+			function registerListeners(enableDeveloperTools) {
+
+				// Devtools & reload support
+				if (enableDeveloperTools) {
+					var extractKey = function(e) {
+						return [
+							e.ctrlKey ? 'ctrl-' : '',
+							e.metaKey ? 'meta-' : '',
+							e.altKey ? 'alt-' : '',
+							e.shiftKey ? 'shift-' : '',
+							e.keyCode
+						].join('');
+					};
+
+					var TOGGLE_DEV_TOOLS_KB = (process.platform === 'darwin' ? 'meta-alt-73' : 'ctrl-shift-73'); // mac: Cmd-Alt-I, rest: Ctrl-Shift-I
+					var RELOAD_KB = (process.platform === 'darwin' ? 'meta-82' : 'ctrl-82'); // mac: Cmd-R, rest: Ctrl-R
+
+					window.addEventListener('keydown', function(e) {
+						var key = extractKey(e);
+						if (key === TOGGLE_DEV_TOOLS_KB) {
+							ipc.send('vscode:toggleDevTools', windowId);
+						} else if (key === RELOAD_KB) {
+							ipc.send('vscode:reloadWindow', windowId);
+						}
+					});
+				}
+
+				process.on('uncaughtException', function(error) { onError(error, enableDeveloperTools) });
+			}
+		</script>
+
+		<!-- Startup Code -->
+		<script type="text/javascript">
+// TODO:			var webFrame = require('electron').webFrame;
+			var webFrame = {
+				setZoomLevelLimits: function (min, max) { /* console.log('webFrame.setZoomLevelLimits'); */ },
+				setZoomLevel: function (level) { /* console.log('webFrame.setZoomLevel'); */ }
+			};
+
+			var mainStarted = false;
+			var args = parseURLQueryArgs(); // TODO: really they pass a giant config={...} argument?
+
+			// Don't show progress for min or opt builds until that is working
+			var showProgress = (window.location.pathname !== '/ide/' && !args.b);
+			if (showProgress) {
+				document.write('<progress id="loading_percent" value="0" max="100" style="width: 100%"></progress>');
+			} else {
+				document.write('<div id="loading_spinner" class="exlcode-spinner"></div>');
+			}
+
+			if (args.code) {
+				// Ask our auth server to get a GitHub access token.
+				var xhr = new XMLHttpRequest();
+				// TODO: timeout, retry, etc
+				xhr.open('POST', 'https://github-token-service.exlcode.com/v1/github-auth?code=' + args.code);
+				xhr.onload = function () {
+					if (this.status == 200) {
+						var result = {};
+						var params = this.responseText.split(/[?&]/);
+						for (var i = 0; i < params.length; i++) {
+							var param = params[i];
+							if (param) {
+								var keyValue = param.split('=');
+								if (keyValue.length === 2) {
+									result[keyValue[0]] = decodeURIComponent(keyValue[1]);
+								}
+							}
+						}
+						if (result.access_token) {
+							// Retain the access token in local storage for future use.
+							try {
+								window.localStorage.setItem('githubToken', result.access_token);
+							} catch (error) {
+								// Safari raises Quota Exceeded exception in Private Browsing mode.
+								setCookie('githubToken', result.access_token, 365);
+							}
+
+							startup2(args);
+
+						} else if (result.error) {
+							var error = result.error + ': ' + decodeURIComponent(result.error_description.replace(/\+/g, '%20'))
+							document.write(error);
+							console.log(error);
+						}
+					} else {
+						xhr.onerror();
+					}
+				}
+				xhr.onerror = function () {
+					document.write('authorization failed. status: ' + xhr.status + ', statusText: ' + xhr.statusText + ', responseText: ' + xhr.responseText);
+					var output = '';
+					for (var property in xhr) {
+						if (typeof(xhr[property]) != 'function')
+							output += '\n    ' + property + ': ' + xhr[property];
+					}
+					console.log('authorization failed: ' + output);
+				}
+				xhr.send();
+			} else {
+				startup2(args);
+			}
+
+			function startup2(args) {
+				args.config = '{ "appName": "EXLcode", "userEnv": {}, "appSettingsPath": "/$gist/EXLcode Settings/settings.json", "appKeybindingsPath": "/$gist/EXLcode Settings/keybindings.json", "appSettingsHome": "/$gist/EXLcode Settings" }';
+				var configuration = JSON.parse(args['config']);
+				configuration.gistRegEx = /^\/\$gist\/.+.*\/.+.*$/;
+				configuration.workspacePath = args.workspacePath;
+
+				// If we're running in prod mode the root is '/ide'
+				if (window.location.pathname === '/ide/') {
+					configuration.rootPath = '/ide/out-build-min';
+				} else {
+					// If we're running locally then we're running out of one of the 'out-*' directories
+					configuration.buildType = args.b;
+					switch (configuration.buildType) {
+					case 'opt':
+						configuration.rootPath = '/out-build-opt';
+						break;
+					case 'min':
+						configuration.rootPath = '/out-build-min';
+						break;
+					default:
+						configuration.rootPath = '/out-build'
+						break;
+					}
+				}
+
+				// If there's no repo in the URL, look in sessionStorage, then localStorage
+				if (!args.repo) {
+					args.repo = window.sessionStorage.getItem('exlcodeRepo');
+					args.branch = window.sessionStorage.getItem('exlcodeBranch');
+					args.context = window.sessionStorage.getItem('exlcodeContext');
+					args.tag = window.sessionStorage.getItem('exlcodeTag');
+					if (!args.repo) {
+						args.repo = window.localStorage.getItem('lastExlcodeRepo');
+						args.branch = window.localStorage.getItem('lastExlcodeBranch');
+						args.context = window.localStorage.getItem('lastExlcodeContext');
+						args.tag = window.localStorage.getItem('lastExlcodeTag');
+					}
+				}
+
+				// Clear "code=" and any other unneeded args out of the URL and show the active repo and branch/tag.
+				var query = '';
+				if (args.repo) {
+					query += '?repo=' + args.repo;
+					if (args.branch) {
+						query += '&branch=' + args.branch;
+					} else if (args.tag) {
+						query += '&tag=' + args.tag;
+					}
+					query += '&context=';
+					if (args.context) {
+						query += args.context;
+					} else {
+						query += 'local';
+					}
+				}
+				if (args.b) {
+					query += '&b=' + args.b;
+				}
+				window.history.replaceState(null, '', location.origin + location.pathname + query);
+				window.sendGa(location.pathname + query);
+
+				// If a repo is specified and the user has been authorized, configure the workspace
+				// to use it and persist in local/session storage for parameterless reloads.
+				if (args.repo) {
+					configuration.exlcodeRepo = args.repo;
+					if (args.branch) {
+						configuration.exlcodeBranch = args.branch;
+						configuration.exlcodeTag = '';
+					} else if (args.tag) {
+						configuration.exlcodeBranch = '';
+						configuration.exlcodeTag = args.tag;
+					} else {
+						configuration.exlcodeBranch = 'master';
+						configuration.exlcodeTag = '';
+					}
+
+					if (args.context) {
+						configuration.exlcodeContext = args.context;
+					} else {
+						configuration.exlcodeContext = 'local';
+					}
+
+					configuration.workspacePath = '/';
+					try {
+						window.localStorage.setItem('lastExlcodeRepo', configuration.exlcodeRepo);
+						window.localStorage.setItem('lastExlcodeBranch', configuration.exlcodeBranch);
+						window.localStorage.setItem('lastExlcodeContext', configuration.exlcodeContext);
+						window.localStorage.setItem('lastExlcodeTag', configuration.exlcodeTag);
+					} catch (error) {
+						// Safari raises Quota Exceeded exception in Private Browsing mode.
+					}
+
+					try {
+						window.sessionStorage.setItem('exlcodeRepo', configuration.exlcodeRepo);
+						window.sessionStorage.setItem('exlcodeBranch', configuration.exlcodeBranch);
+						window.sessionStorage.setItem('exlcodeContext', configuration.exlcodeContext);
+						window.sessionStorage.setItem('exlcodeTag', configuration.exlcodeTag);
+					} catch (error) {
+						// Safari raises Quota Exceeded exception in Private Browsing mode.
+					}
+				}
+
+				configuration.userEnv.githubToken = window.localStorage.getItem('githubToken');
+				if (configuration.userEnv.githubToken === null)
+					configuration.userEnv.githubToken = getCookie('githubToken');
+				if (args.u)
+					configuration.userEnv.githubUsername = args.u;
+				if (args.p)
+					configuration.userEnv.githubPassword = args.p;
+				if (args.t)
+					configuration.userEnv.githubToken = args.t;
+				if (configuration.userEnv.githubToken !== null) {
+					try {
+						window.localStorage.setItem('githubToken', configuration.userEnv.githubToken);
+					} catch (error) {
+						// Safari raises Quota Exceeded exception in Private Browsing mode.
+						setCookie('githubToken', configuration.userEnv.githubToken, 365);
+					}
+				}
+				var enableDeveloperTools = !configuration.isBuilt || !!configuration.extensionDevelopmentPath;
+
+	// TODO:			process.env['VSCODE_SHARED_IPC_HOOK'] = configuration.sharedIPCHandle;
+				// Get the nls configuration into the process.env as early as possible.
+				if (configuration.userEnv && configuration.userEnv['VSCODE_NLS_CONFIG']) {
+	// TODO:				process.env['VSCODE_NLS_CONFIG'] = configuration.userEnv['VSCODE_NLS_CONFIG'];
+				}
+
+	// TODO:			registerListeners(enableDeveloperTools);
+
+				// We get the global settings through a remote call from the browser
+				// because its value can change dynamically.
+				var globalSettings;
+				var globalSettingsValue = remote.getGlobal('globalSettingsValue');
+				if (globalSettingsValue) {
+					globalSettings = JSON.parse(globalSettingsValue);
+				} else {
+					globalSettings = {
+						settings: {},
+						keybindings: []
+					};
+				}
+
+				// disable pinch zoom & apply zoom level early to avoid glitches
+				var windowConfiguration = globalSettings.settings && globalSettings.settings.window;
+				webFrame.setZoomLevelLimits(1, 1);
+				if (windowConfiguration && typeof windowConfiguration.zoomLevel === 'number' && windowConfiguration.zoomLevel !== 0) {
+					webFrame.setZoomLevel(windowConfiguration.zoomLevel);
+				}
+
+				// Load the loader and start loading the workbench
+	// TODO:			var rootUrl = uriFromPath(configuration.appRoot) + '/out';
+				var rootPath = configuration.rootPath;
+				// In the bundled version the nls plugin is packaged with the loader so the NLS Plugins
+				// loads as soon as the loader loads. To be able to have pseudo translation
+				createScript(rootPath + '/vs/loader.js', function() {
+					var nlsConfig;
+					try {
+						// TODO: var config = process.env['VSCODE_NLS_CONFIG'];
+						var config = null;
+						if (config) {
+							nlsConfig = JSON.parse(config);
+						}
+					} catch (e) {
+					}
+					if (!nlsConfig) {
+						nlsConfig = { availableLanguages: {} };
+					} else {
+						var locale = nlsConfig.availableLanguages['*'] || 'en';
+						if (locale === 'zh-tw') {
+							locale = 'zh-Hant';
+						} else if (locale === 'zh-cn') {
+							locale = 'zh-Hans';
+						}
+						window.document.documentElement.setAttribute('lang', locale);
+					}
+					require.config({
+						baseUrl: rootPath,
+						'vs/nls': nlsConfig,
+						recordStats: configuration.enablePerformance,
+						ignoreDuplicateModules: [
+							'vs/workbench/parts/search/common/searchQuery'
+						],
+						paths: {
+							'vs/basic-languages': 'monaco-languages',
+							'vs/language/typescript': 'monaco-typescript',
+							'vs/language/json': 'monaco-json',
+							'vs/language/css': 'monaco-css'
+						}
+					});
+					if (nlsConfig.pseudo) {
+						require(['vs/nls'], function(nlsPlugin) {
+							nlsPlugin.setPseudoTranslation(nlsConfig.pseudo);
+						});
+					}
+
+					var hasWorkspaceContext = configuration.workspacePath;
+
+					window.MonacoEnvironment = {
+						'enableTasks': hasWorkspaceContext,
+						'enableSendASmile' : !!configuration.sendASmile
+					};
+
+					var timers = window.MonacoEnvironment.timers = {
+						start: new Date()
+					};
+
+					if (configuration.enablePerformance) {
+						var programStart = remote.getGlobal('programStart');
+						var vscodeStart = remote.getGlobal('vscodeStart');
+
+						if (programStart) {
+							timers.beforeProgram = new Date(programStart);
+							timers.afterProgram = new Date(vscodeStart);
+						}
+
+						timers.vscodeStart = new Date(vscodeStart);
+						timers.start = new Date(programStart || vscodeStart);
+					}
+
+					timers.beforeLoad = new Date();
+
+					// Simple progress indicator
+					if (showProgress) {
+						var elPercent = document.getElementById('loading_percent');
+						var idScriptLoaded = AMDLoader.LoaderEventType.EndLoadingScriptOK;
+						var percentComplete = 0;
+						var percentLoadEach = 100 / 540;
+						var percentUpdateLast = 0;
+						AMDLoader.LoaderEventRecorder.prototype.record = function(type, detail) {
+							if (type === idScriptLoaded) {
+								percentComplete += percentLoadEach;
+								if (percentUpdateLast != Math.ceil(percentComplete)) {
+									percentUpdateLast = Math.ceil(percentComplete);
+									elPercent.value = percentUpdateLast <= 100 ? percentUpdateLast : 100;
+								}
+							}
+						};
+						var loaderConfig = require.getConfig();
+						loaderConfig.recordStats = true;
+						require.config(loaderConfig, false);
+					}
+
+					require(['vs/workbench/workbench.main'], function() {
+						timers.afterLoad = new Date();
+
+						var main = require('vs/workbench/electron-browser/main');
+						main.startup(configuration, globalSettings).then(function() {
+							mainStarted = true;
+
+							// Remove the progress indicator and related startup styles
+							var elBody = document.getElementsByTagName("body")[0];
+							elBody.classList.remove('exlcode-body-startup');
+							if (showProgress) {
+								elBody.removeChild(document.getElementById('loading_percent'));
+							} else {
+								elBody.removeChild(document.getElementById('loading_spinner'));
+							}
+						}, function(error) { onError(error, enableDeveloperTools) });
+					});
+				});
+			}
+
+		</script>
+	</head>
+	<body class="exlcode-body-startup monaco-shell vs-dark" aria-label=""> <!-- setting aria label to empty here seems to prevent NVDA from reading the full URL of the application on start/reload -->
+		<script>
+			(function() {
+				try {
+					var theme = window.localStorage.getItem('storage://global/workbench.theme');
+					if (theme) {
+						var baseTheme = theme.split(' ')[0];
+						if (baseTheme !== 'vs-dark') {
+							window.document.body.className = 'monaco-shell ' + baseTheme;
+						}
+					}
+				} catch (error) {
+					console.error(error);
+				}
+			})();
+		</script>
+	</body>
+</html>
