@@ -12,7 +12,9 @@
     "test": "mocha",
     "preinstall": "node build/npm/preinstall.js",
     "postinstall": "node build/npm/postinstall.js",
-    "watch": "gulp watch"
+    "watch": "gulp watch",
+    "docker:build": "cd exlcode && npm run build-min && cd .. && docker build -t exlcode/ide-web:latest .",
+    "docker:push": "docker push exlcode/ide-web:latest"
   },
   "dependencies": {
     "applicationinsights": "0.15.6",
