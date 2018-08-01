@@ -6066,8 +6066,7 @@
     "lru-cache": {
       "version": "2.7.3",
       "resolved": "https://registry.npmjs.org/lru-cache/-/lru-cache-2.7.3.tgz",
-      "integrity": "sha1-bUUk6LlV+V1PW1iFHOId1y+06VI=",
-      "dev": true
+      "integrity": "sha1-bUUk6LlV+V1PW1iFHOId1y+06VI="
     },
     "make-iterator": {
       "version": "1.0.1",
@@ -7638,7 +7637,19 @@
       "integrity": "sha1-xd5vyz3sgFI8HHARPxoZDYr4LIk=",
       "requires": {
         "graceful-fs": "~4.1.2",
+        "minimatch": "~0.2.12",
         "readable-stream": "~1.0.26-2"
+      },
+      "dependencies": {
+        "minimatch": {
+          "version": "0.2.14",
+          "resolved": "https://registry.npmjs.org/minimatch/-/minimatch-0.2.14.tgz",
+          "integrity": "sha1-x054BXT2PG+aCQ6Q775u9TpqdWo=",
+          "requires": {
+            "lru-cache": "2",
+            "sigmund": "~1.0.0"
+          }
+        }
       }
     },
     "rechoir": {
@@ -8247,8 +8258,7 @@
     "sigmund": {
       "version": "1.0.1",
       "resolved": "https://registry.npmjs.org/sigmund/-/sigmund-1.0.1.tgz",
-      "integrity": "sha1-P/IfGYytIXX587eBhT/ZTQ0ZtZA=",
-      "dev": true
+      "integrity": "sha1-P/IfGYytIXX587eBhT/ZTQ0ZtZA="
     },
     "signal-exit": {
       "version": "3.0.2",
